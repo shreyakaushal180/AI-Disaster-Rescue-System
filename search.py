@@ -2,130 +2,110 @@ from collections import deque
 import heapq
 
 def bfs(env, start, goal):
-    queue = deque()
-    queue.append((start, [start]))
-    visited = set()
+    if not env.is_valid(*start) or not env.is_valid(*goal):
+        return None
+
+    queue = deque([start])
+    parents = {start: None}
 
     while queue:
-        (x, y), path = queue.popleft()
+        current = queue.popleft()
+        if current == goal:
+            return _build_path(parents, goal)
 
-        if (x, y) == goal:
-            return path
-
-        if (x, y) in visited:
-            continue
-
-        visited.add((x, y))
-
-        for nx, ny in env.get_neighbors(x, y):
-            queue.append(((nx, ny), path + [(nx, ny)]))
+        for neighbor in env.get_neighbors(*current):
+            if neighbor not in parents:
+                parents[neighbor] = current
+                queue.append(neighbor)
 
     return None
 
 def dfs(env, start, goal):
-    stack = [(start, [start])]
-    visited = set()
+    if not env.is_valid(*start) or not env.is_valid(*goal):
+        return None
+
+    stack = [start]
+    parents = {start: None}
 
     while stack:
-        (x, y), path = stack.pop()
+        current = stack.pop()
+        if current == goal:
+            return _build_path(parents, goal)
 
-        if (x, y) == goal:
-            return path
-
-        if (x, y) in visited:
-            continue
-
-        visited.add((x, y))
-
-        for nx, ny in env.get_neighbors(x, y):
-            stack.append(((nx, ny), path + [(nx, ny)]))
+        for neighbor in env.get_neighbors(*current):
+            if neighbor not in parents:
+                parents[neighbor] = current
+                stack.append(neighbor)
 
     return None
+
+def _build_path(parents, goal):
+    path = []
+    current = goal
+    while current is not None:
+        path.append(current)
+        current = parents[current]
+    return list(reversed(path))
 
 def heuristic(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 def a_star(env, start, goal):
-    pq = []
-    heapq.heappush(pq, (0, start, [start]))
-
-    visited = set()
-
-    while pq:
-        cost, (x, y), path = heapq.heappop(pq)
-
-        if (x, y) == goal:
-            return path
-
-        if (x, y) in visited:
-            continue
-
-        visited.add((x, y))
-
-        for nx, ny in env.get_neighbors(x, y):
-            g = len(path)
-            h = heuristic((nx, ny), goal)
-            heapq.heappush(pq, (g + h, (nx, ny), path + [(nx, ny)]))
-
-    return None
+    return _a_star(env, start, goal, risk_weight=0)
 
 def a_star_risk(env, start, goal, risk_weight=3):
-    pq = []
-    heapq.heappush(pq, (0, start, [start]))
+    return _a_star(env, start, goal, risk_weight)
 
-    visited = set()
+def _a_star(env, start, goal, risk_weight):
+    if risk_weight < 0:
+        raise ValueError("risk_weight must be non-negative.")
+    if not env.is_valid(*start) or not env.is_valid(*goal):
+        return None
 
-    while pq:
-        cost, (x, y), path = heapq.heappop(pq)
+    queue = [(heuristic(start, goal), 0, start)]
+    best_cost = {start: 0}
+    parents = {start: None}
 
-        if (x, y) == goal:
-            return path
-
-        if (x, y) in visited:
+    while queue:
+        _, cost, current = heapq.heappop(queue)
+        if cost != best_cost.get(current):
             continue
+        if current == goal:
+            return _build_path(parents, goal)
 
-        visited.add((x, y))
-
-        for nx, ny in env.get_neighbors(x, y):
-            g = len(path)
-
-            risk = env.grid[nx][ny].risk_level * risk_weight
-
-            h = heuristic((nx, ny), goal)
-
-            total_cost = g + h + risk
-
-            heapq.heappush(pq, (total_cost, (nx, ny), path + [(nx, ny)]))
+        for neighbor in env.get_neighbors(*current):
+            step_cost = 1 + env.grid[neighbor[0]][neighbor[1]].risk_level * risk_weight
+            next_cost = cost + step_cost
+            if next_cost >= best_cost.get(neighbor, float("inf")):
+                continue
+            best_cost[neighbor] = next_cost
+            parents[neighbor] = current
+            priority = next_cost + heuristic(neighbor, goal)
+            heapq.heappush(queue, (priority, next_cost, neighbor))
 
     return None
 
 def greedy_best_first(env, start, goal):
-    import heapq
+    if not env.is_valid(*start) or not env.is_valid(*goal):
+        return None
 
-    pq = []
-    heapq.heappush(pq, (0, start, [start]))
+    queue = [(heuristic(start, goal), start)]
+    parents = {start: None}
 
-    visited = set()
-
-    while pq:
-        h, (x, y), path = heapq.heappop(pq)
-
-        if (x, y) == goal:
-            return path
-
-        if (x, y) in visited:
-            continue
-
-        visited.add((x, y))
-
-        for nx, ny in env.get_neighbors(x, y):
-            h = heuristic((nx, ny), goal)
-
-            heapq.heappush(pq, (h, (nx, ny), path + [(nx, ny)]))
-
+    while queue:
+        _, current = heapq.heappop(queue)
+        if current == goal:
+            return _build_path(parents, goal)
+        for neighbor in env.get_neighbors(*current):
+            if neighbor not in parents:
+                parents[neighbor] = current
+                heapq.heappush(queue, (heuristic(neighbor, goal), neighbor))
     return None
 
 def hill_climbing(env, start, goal):
+    if not env.is_valid(*start) or not env.is_valid(*goal):
+        return None
+
     current = start
     path = [current]
 

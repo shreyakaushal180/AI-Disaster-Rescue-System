@@ -25,7 +25,7 @@ def select_unassigned_variable(assignment, victims):
 def backtrack(assignment, victims, ambulances):
     global backtrack_count   # OK USE GLOBAL
 
-    if len(assignment) == 4:
+    if len(assignment) == len(victims) or len(assignment) >= len(ambulances) * 2:
         return assignment
 
     victim = select_unassigned_variable(assignment, victims)
@@ -33,7 +33,10 @@ def backtrack(assignment, victims, ambulances):
     if victim is None:
         return assignment
 
-    for amb in ambulances:
+    # LCV (Least Constraining Value) heuristic: try least-loaded ambulance first
+    ambulances_ordered = sorted(ambulances, key=lambda a: list(assignment.values()).count(a))
+
+    for amb in ambulances_ordered:
 
         print(f"Trying: Victim {victim.id} -> {amb}")
 
@@ -57,13 +60,14 @@ def backtrack(assignment, victims, ambulances):
 
 # MAIN CSP FUNCTION
 
-def csp_assign(victims):
+def csp_assign(victims, ambulances=None):
     global backtrack_count
     backtrack_count = 0   
 
     print("\n--- CSP (Backtracking + MRV) ---")
 
-    ambulances = ["Ambulance 1", "Ambulance 2"]
+    if ambulances is None:
+        ambulances = ["Ambulance 1", "Ambulance 2"]
 
     # Sort victims by severity (heuristic improvement)
     victims_sorted = sorted(

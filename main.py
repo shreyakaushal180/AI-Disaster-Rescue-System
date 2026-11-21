@@ -1,3 +1,8 @@
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from search import bfs, dfs, a_star, a_star_risk
 from search import greedy_best_first
 from search import hill_climbing
@@ -227,18 +232,48 @@ full_path = path + hospital_path[1:]
 print("\nFull Rescue Path:")
 print(full_path)
 
-env.display_path(full_path)
-
 for v in env.victims:
     if v.id == victim.id:
         v.rescued = True
 
-print("\nTotal Distance:", len(full_path))
+mission_paths = [full_path]
+current_hospital = hospital
 
-avg_time = len(full_path)  # assuming 1 step = 1 time unit
+while True:
+    next_victim, next_path = choose_best_victim(env, current_hospital)
+    if next_victim is None or next_path is None:
+        break
+
+    next_hospital, next_hospital_path = find_nearest_hospital(
+        env, (next_victim.x, next_victim.y)
+    )
+    if next_hospital is None or next_hospital_path is None:
+        break
+
+    next_route = next_path + next_hospital_path[1:]
+    mission_paths.append(next_route)
+    next_victim.rescued = True
+    print(
+        f"\nAmbulance dispatched from Hospital {current_hospital} "
+        f"to Victim V{next_victim.id}, then returned to Hospital {next_hospital}."
+    )
+    print("Trip Path:", next_route)
+    current_hospital = next_hospital
+
+combined_path = []
+for route in mission_paths:
+    combined_path.extend(route if not combined_path else route[1:])
+
+print("\n--- COMPLETE MULTI-TRIP RESCUE ROUTE ---")
+env.display_path(combined_path)
+
+total_distance = sum(len(route) - 1 for route in mission_paths)
+print("\nTotal Distance:", total_distance)
+
+avg_time = total_distance / max(1, len(mission_paths))
 print("Average Rescue Time:", avg_time)
 
-full_risk = compute_path_risk(env, full_path)
+full_risk = sum(compute_path_risk(env, route) for route in mission_paths)
 print("Total Risk Exposure:", full_risk)
 
 # Victims saved
@@ -246,7 +281,7 @@ saved = sum(1 for v in env.victims if v.rescued)
 print("Victims Saved:", saved)
 
 # Resource utilization
-total_capacity = 4
+total_capacity = len(env.victims)
 utilization = saved / total_capacity
 print("Resource Utilization Rate:", round(utilization, 2))
 
@@ -255,7 +290,7 @@ print("Low risk exposure indicates safer route selection")
 print("Optimality ratio shows efficiency of planning")
 print("System balances speed and safety based on scenario")
 
-print("\nMISSION COMPLETE: Victim successfully rescued and delivered to hospital")
+print(f"\nMISSION COMPLETE: {saved} victim(s) rescued and delivered to hospital.")
 
 
 print("\nSystem now transitions to dynamic environment handling")

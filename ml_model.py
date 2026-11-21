@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
 import pandas as pd
 import numpy as np
+
+CSV_PATH = Path(__file__).resolve().parent / "DisasterDeclarationsSummaries.csv"
  
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -16,7 +20,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 # 1. LOAD REAL FEMA DATASET
 
-df = pd.read_csv("DisasterDeclarationsSummaries.csv")
+df = pd.read_csv(CSV_PATH)
  
 # Keep useful columns
 df = df[["incidentType", "declarationType", "designatedArea"]].dropna()

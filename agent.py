@@ -53,7 +53,7 @@ def choose_best_victim(env, start):
         if path is None:
             continue
 
-        distance = len(path)
+        distance = len(path) - 1
         risk = compute_path_risk(env, path)
         severity_score = get_severity_score(victim.severity)
 
@@ -74,6 +74,10 @@ def choose_best_victim(env, start):
             best_victim = victim
             best_path = path
 
+    if best_victim is None:
+        print("\nNo reachable unrescued victims found.")
+        return None, None
+
     print("\nOK Selected Victim:", best_victim.id)
     print("Reason: Highest combined priority (severity, distance, risk)")
 
@@ -92,7 +96,7 @@ def find_nearest_hospital(env, victim_pos):
         if path is None:
             continue
 
-        distance = len(path)
+        distance = len(path) - 1
 
         print(f"Hospital {hospital} -> Distance: {distance}")
 
