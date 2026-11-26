@@ -153,6 +153,8 @@ Where:
 
 ## 🚀 Quick Start Guide
 
+For a project summary, AI module notes, five-person team assignment, schedule, and demo checklist, see [PROJECT_NOTES.md](PROJECT_NOTES.md).
+
 ### 1. Prerequisites
 - Python 3.10, 3.11, 3.12, or 3.13
 - Git
